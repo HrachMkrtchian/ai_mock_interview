@@ -1,14 +1,15 @@
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
+from pydantic_settings import BaseSettings
 
 
-class Settings:
+class Settings(BaseSettings):
+    APP_NAME: str = "AI Mock Interview Platform"
+    DEBUG: bool = True
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 
-    OPENAI_API_KEY: str = os.getenv("GEMINI_API_KEY")
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
 
-    if not OPENAI_API_KEY:
-        raise ValueError("OPENAI_API_KEY-ը գտնված չէ .env ֆայլում:")
 
 settings = Settings()
