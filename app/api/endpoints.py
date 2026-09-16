@@ -49,6 +49,7 @@ def submit_answer(
     if request.session_id not in sessions_db:
         sessions_db[request.session_id] = []
 
+    # Պահպանում ենք ընթացիկ պատասխանը
     sessions_db[request.session_id].append({
         "question_id": request.question_id,
         "topic": request.topic,
@@ -56,7 +57,24 @@ def submit_answer(
         "score": evaluation.score
     })
 
+    # Եթե պատասխանել է 4-րդ (վերջին) հարցին, հաշվում ենք վերջնական կշռված %-ը
+    if len(sessions_db[request.session_id]) >= 4:
+        final_summary = llm_service.calculate_final_result(sessions_db[request.session_id])
+        # Վերջնական արդյունքը պահում ենք սեսիայի մեջ` հետագայում analytics-ին փոխանցելու համար
+        sessions_db[f"{request.session_id}_result"] = final_summary
+
     return evaluation
+
+
+@router.get("/final-result/{session_id}")
+def get_final_result(session_id: str):
+    result = sessions_db.get(f"{session_id}_result")
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Վերջնական արդյունքը չի գտնվել կամ հարցազրույցը դեռ ավարտված չէ:"
+        )
+    return result
 
 
 @router.post("/analytics/session")
