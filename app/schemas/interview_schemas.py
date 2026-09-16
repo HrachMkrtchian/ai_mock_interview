@@ -19,11 +19,10 @@ class SubmitAnswerRequest(BaseModel):
 
 
 class QuestionEvaluation(BaseModel):
-    score: Union[int, float] = Field(..., ge=0, le=10, description="Score from 0 to 10")
+    score: int = Field(..., description="Score from 0 to 10")
     strengths: List[str] = Field(default_factory=list, description="Strengths of the answer")
     missing_points: List[str] = Field(default_factory=list, description="Missing points")
     feedback: str = Field(..., description="Overall feedback")
-
 
 class NextQuestionResponse(BaseModel):
     question_id: int
