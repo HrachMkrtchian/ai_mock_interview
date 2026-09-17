@@ -59,157 +59,23 @@ else:
         layout="wide"
     )
 
-# --- ADVANCED SECURITY: OVERLAY BLUR, COPY BLOCK & LIVE PASTE MONITOR ---
-security_component = """
-<script>
-    try {
-        const parentDoc = window.parent.document;
-        const parentWin = window.parent;
-
-        // 1. Create Anti-Cheat Fullscreen Blur Overlay if not exists
-        let overlay = parentDoc.getElementById('anti-cheat-overlay');
-        if (!overlay) {
-            overlay = parentDoc.createElement('div');
-            overlay.id = 'anti-cheat-overlay';
-            overlay.style.position = 'fixed';
-            overlay.style.top = '0';
-            overlay.style.left = '0';
-            overlay.style.width = '100vw';
-            overlay.style.height = '100vh';
-            overlay.style.backdropFilter = 'blur(16px)';
-            overlay.style.webkitBackdropFilter = 'blur(16px)';
-            overlay.style.backgroundColor = 'rgba(15, 23, 42, 0.75)';
-            overlay.style.zIndex = '99999999';
-            overlay.style.display = 'none';
-            overlay.style.justifyContent = 'center';
-            overlay.style.alignItems = 'center';
-            overlay.style.color = '#FFFFFF';
-            overlay.style.fontSize = '26px';
-            overlay.style.fontWeight = 'bold';
-            overlay.style.fontFamily = 'sans-serif';
-            overlay.style.textAlign = 'center';
-            overlay.style.padding = '20px';
-            overlay.innerHTML = '⚠️ Վերադարձեք հարցազրույցի էջ!<br><span style="font-size: 16px; font-weight: normal; color: #94A3B8; margin-top: 10px; display: block;">Թաբից հեռանալը, էկրանի սքրինշոթ անելը կամ ֆոկուսը կորցնելն արգելված է:</span>';
-            parentDoc.body.appendChild(overlay);
-        }
-
-        function triggerBlur() {
-            overlay.style.display = 'flex';
-            parentDoc.title = "⚠️ Վերադարձեք հարցազրույցի էջ!";
-        }
-
-        function removeBlur() {
-            overlay.style.display = 'none';
-            parentDoc.title = "Henk Foundation - AI Mock Interview";
-        }
-
-        parentDoc.addEventListener("visibilitychange", function() {
-            if (parentDoc.hidden) { triggerBlur(); } else { removeBlur(); }
-        });
-
-        parentWin.addEventListener("blur", function() { triggerBlur(); });
-        parentWin.addEventListener("focus", function() { removeBlur(); });
-
-        // 2. Copy and Cut Block
-        parentDoc.addEventListener('copy', function(e) {
-            e.preventDefault();
-            alert('❌ Արգելված է տեքստ արտագրել հարթակից (Copy/Cut):');
-        });
-
-        parentDoc.addEventListener('cut', function(e) {
-            e.preventDefault();
-            alert('❌ Արգելված է տեքստ կտրել հարթակից (Copy/Cut):');
-        });
-
-        // 3. Live Paste Monitor (5% threshold check on textareas)
-        function initPasteMonitor() {
-            const textareas = parentDoc.querySelectorAll('textarea');
-            textareas.forEach(textarea => {
-                if (textarea.dataset.pasteMonitored) return;
-                textarea.dataset.pasteMonitored = "true";
-
-                let pastedChars = 0;
-
-                textarea.addEventListener('paste', function(e) {
-                    const clipboardText = e.clipboardData.getData('text');
-                    if (clipboardText) {
-                        pastedChars += clipboardText.length;
-                    }
-                });
-
-                textarea.addEventListener('input', function() {
-                    const totalLength = textarea.value.length;
-                    if (totalLength === 0) {
-                        pastedChars = 0;
-                    } else if (pastedChars > totalLength) {
-                        pastedChars = totalLength;
-                    }
-
-                    const ratio = totalLength > 0 ? (pastedChars / totalLength) : 0;
-
-                    let warningDiv = textarea.parentNode.querySelector('.paste-warning-banner');
-                    if (!warningDiv) {
-                        warningDiv = parentDoc.createElement('div');
-                        warningDiv.className = 'paste-warning-banner';
-                        warningDiv.style.color = '#EF4444';
-                        warningDiv.style.fontSize = '13px';
-                        warningDiv.style.fontWeight = 'bold';
-                        warningDiv.style.marginTop = '6px';
-                        textarea.parentNode.appendChild(warningDiv);
-                    }
-
-                    if (ratio > 0.05) {
-                        warningDiv.innerHTML = `⚠️ Զգուշացում. Տեղադրված (Paste) նյութը կազմում է պատասխանի մոտ ${Math.round(ratio * 100)}%-ը (>5%): Այն կգնահատվի 0 միավոր։`;
-                        warningDiv.style.display = 'block';
-                    } else {
-                        warningDiv.style.display = 'none';
-                    }
-                });
-            });
-        }
-
-        setInterval(initPasteMonitor, 1000);
-
-    } catch(err) {
-        console.error("Security injection error:", err);
-    }
-</script>
-"""
-components.html(security_component, height=0, width=0)
-
-
-# --- LIVE TIMER COMPONENT ---
-def render_live_timer(seconds_left):
-    timer_html = f"""
-    <div style="text-align: right; font-size: 1.25rem; font-weight: bold; color: #EF4444; font-family: sans-serif; padding-top: 10px;">
-        ⏳ Մնացածը՝ <span id="live-timer">--:--</span>
-    </div>
-    <script>
-        let timeLeft = {seconds_left};
-        const timerSpan = document.getElementById("live-timer");
-
-        function updateDisplay() {{
-            if (timeLeft <= 0) {{
-                timerSpan.innerHTML = "00:00";
-                window.location.reload();
-                return;
-            }}
-            let mins = Math.floor(timeLeft / 60);
-            let secs = timeLeft % 60;
-            timerSpan.innerHTML = (mins < 10 ? "0" : "") + mins + ":" + (secs < 10 ? "0" : "") + secs;
-            timeLeft--;
-        }}
-
-        updateDisplay();
-        setInterval(updateDisplay, 1000);
-    </script>
-    """
-    components.html(timer_html, height=45)
-
-
-# --- CLEAN GLOBAL STYLING (CSS) ---
+# --- GLOBAL STYLING (CSS) + SECURITY (BLUR & NO SELECT) ---
 st.markdown("""
 <style>
+    /* Արգելել տեքստի նշումը և աջ սեղմումը */
+    body {
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+    }
+
+    /* Մշուշման էֆեկտ (Blur), երբ կորչում է ֆոկուսը կամ բացվում է այլ ծրագիր/սքրինշոթ */
+    .blur-screen {
+        filter: blur(12px);
+        transition: filter 0.3s ease;
+    }
+
     .stApp {
         background-color: #F8FAFC;
         font-family: 'Inter', sans-serif;
@@ -238,25 +104,14 @@ st.markdown("""
         text-align: center;
         box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.1);
     }
-    .cheating-alert {
-        background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%);
-        border: 2px solid #EF4444;
-        border-radius: 15px;
-        padding: 1.5rem;
-        text-align: center;
-        color: #991B1B;
-        font-weight: 700;
-        margin-bottom: 1.5rem;
-    }
     .warning-box {
         padding: 15px;
-        background-color: #1E293B;
-        color: #F8FAFC;
+        background-color: #d9534f;
+        color: white;
         border-radius: 8px;
-        border-left: 5px solid #3B82F6;
-        font-size: 0.95rem;
+        font-weight: bold;
+        text-align: center;
         margin-bottom: 20px;
-        line-height: 1.5;
     }
     .stButton>button {
         border-radius: 12px;
@@ -270,6 +125,32 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
+# --- JAVASCRIPT՝ Ֆոկուսի կորստի, Քոփի-Փեսթի և Աջ սեղմման արգելքի համար ---
+protection_js = """
+<script>
+    // Զգուշացնել և մշուշել էջը, երբ օգտատերը դուրս է գալիս թաբից կամ բացում այլ ֆայլ/սքրինշոթ գործիք
+    window.addEventListener('blur', function() {
+        document.body.classList.add('blur-screen');
+        alert('ՈՒՇԱԴՐՈՒԹՅՈՒՆ։ Հեռացել եք հարթակից կամ բացել այլ ծրագիր/ֆայլ/սքրինշոթ գործիք։ Ձեր գործողությունը գրանցվել է որպես խախտում։');
+    });
+
+    window.addEventListener('focus', function() {
+        document.body.classList.remove('blur-screen');
+    });
+
+    // Արգելել աջ սեղմումը
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
+    // Հետևել Paste (տեղադրման) գործողությանը
+    document.addEventListener('DOMContentLoaded', (event) => {
+        document.addEventListener('paste', (e) => {
+            alert('Զգուշացում. Տեքստի տեղադրումը (Copy-Paste) արգելված է և ստուգման ժամանակ կհանգեցնի 0 միավորի (եթե > 5%)։');
+        });
+    });
+</script>
+"""
+components.html(protection_js, height=0)
 
 
 # --- OPENROUTER & GEMINI INTEGRATION ---
@@ -301,69 +182,66 @@ def call_openrouter_api(messages):
         return None
 
 
-def detect_ai_usage_and_evaluate(question, answer, difficulty):
+def evaluate_answer_standard(question, answer, difficulty):
     ans_clean = answer.strip()
     if not ans_clean or len(ans_clean.split()) < 2:
-        return 0, "Պատասխանը բացակայում է կամ չափազանց կարճ է (0/100)։", False
+        return 0, "Պատասխանը բացակայում է կամ չափազանց կարճ է (0/100)։", False, False
 
-    ai_indicators = [
-        "որպես արհեստական բանականություն", "պես ai", "հետևյալ կերպ", "եզրափակելով",
-        "summarize", "as an ai", "հաշվի առնելով", "առաջին հերթին պետք է նշել",
-        "կարևոր է ընդգծել", "ամփոփելով կարող ենք ասել"
-    ]
+    word_count = len(ans_clean.split())
+    base_score = min(max(word_count * 2.5, 40), 95)
 
-    local_ai_detected = any(ind in ans_clean.lower() for ind in ai_indicators) or len(ans_clean.split()) > 120
+    is_copied = False
+    is_ai_generated = False
 
     if OPENROUTER_API_KEY:
-        prompt = f"""You are a strict, uncompromising anti-cheating AI detector for technical interviews.
-Analyze the candidate's answer to determine if it was generated by an AI assistant or copied from an external source rather than written on the spot by a human.
+        # Խիստ պրոմպտ՝ ԱԲ-ի առկայությունը և քոփի-փեսթը / արտագրված լինելը ստուգելու համար
+        prompt = f"""You are a strict technical interviewer and anti-cheat analyzer. Evaluate the candidate's answer.
 
 Question: {question}
 Candidate's Answer: {answer}
 
-Strict Rules:
-1. If the answer sounds too polished, structured like an LLM response, uses formal lists/markdown blocks typical of ChatGPT, or seems AI-assisted, set IS_AI to TRUE.
-2. If it is detected as AI, set SCORE to 0 and provide a strict warning in Armenian.
-3. Be strict. If there's a high probability of AI usage, flag it as TRUE.
+Check two critical things:
+1. Is the answer copied from external sources or does it look like a direct heavy copy-paste (more than 5%)? Answer with True or False in the COPIED field.
+2. Is the answer generated or derived heavily using AI (ChatGPT/Claude/etc.)? Answer with True or False in the AI_GENERATED field.
 
-Format your response EXACTLY like this:
-IS_AI: [TRUE or FALSE]
-SCORE: [0 if TRUE, otherwise 0-100]
-FEEDBACK: [Detailed feedback or cheating warning in Armenian]"""
+Provide your evaluation format EXACTLY like this:
+SCORE: [0-100 number only]
+COPIED: [True or False]
+AI_GENERATED: [True or False]
+FEEDBACK: [Short constructive feedback in Armenian]"""
 
         messages = [{"role": "user", "content": prompt}]
         response = call_openrouter_api(messages)
 
         if response:
             try:
-                is_ai = local_ai_detected
-                score = 50
-                feedback = "Պատասխանը ընդունված է:"
+                score = int(base_score)
+                feedback = "Պատասխանը հաջողությամբ գրանցվեց։"
                 lines = response.split('\n')
                 for line in lines:
-                    if line.startswith("IS_AI:"):
-                        is_ai_str = line.replace("IS_AI:", "").strip().upper()
-                        if "TRUE" in is_ai_str:
-                            is_ai = True
-                    elif line.startswith("SCORE:"):
+                    if line.startswith("SCORE:"):
                         score_str = line.replace("SCORE:", "").strip().replace("%", "")
                         score = int(''.join(filter(str.isdigit, score_str)))
+                    elif line.startswith("COPIED:"):
+                        is_copied = "true" in line.replace("COPIED:", "").strip().lower()
+                    elif line.startswith("AI_GENERATED:"):
+                        is_ai_generated = "true" in line.replace("AI_GENERATED:", "").strip().lower()
                     elif line.startswith("FEEDBACK:"):
                         feedback = line.replace("FEEDBACK:", "").strip()
 
-                if is_ai:
-                    return 0, "⚠️ Հայտնաբերվել է արհեստական բանականության (AI) օգտագործում։ Պատասխանը հաշվի չի առնվում և գնահատվում է 0 միավոր։", True
+                # Եթե քոփի-փեսթը գերազանցում է 5% (այստեղ ֆիքսում ենք is_copied-ը) կամ կանոնով որոշվում է
+                if is_copied and is_ai_generated:
+                    return 0, "❌ Արդյունքը՝ 0 միավոր։ Արտագրված է ԱԲ-ից։", True, True
+                elif is_copied:
+                    return 0, "❌ Արդյունքը՝ 0 միավոր։ Արտագրված է (Copy-Paste-ը գերազանցում է 5%-ը)։", True, False
+                elif is_ai_generated:
+                    return int(score * 0.5), "⚠️ Զգուշացում։ Հայտնաբերվել է ԱԲ միջամտություն։", False, True
 
-                return min(max(score, 0), 100), feedback, False
+                return min(max(score, 0), 100), feedback, is_copied, is_ai_generated
             except Exception:
                 pass
 
-    if local_ai_detected:
-        return 0, "⚠️ Հայտնաբերվել է արհեստական բանականության (AI) օգտագործում։ Պատասխանը հաշվի չի առնվում (0/100)։", True
-
-    word_count = len(ans_clean.split())
-    fallback_score = min(max(word_count * 3, 35), 90)
-    return fallback_score, "Պատասխանը հաջողությամբ գրանցվեց և վերլուծվեց։", False
+    return int(base_score), "Պատասխանը հաջողությամբ գրանցվեց և վերլուծվեց։", False, False
 
 
 def get_next_question(topic, level, difficulty, used_questions):
@@ -393,22 +271,22 @@ Return ONLY the text of the question, without any introductory phrases, prefixes
         "Python Core & Data Structures": [
             "Ի՞նչ տարբերություն կա List-ի և Tuple-ի միջև, և ե՞րբ պետք է օգտագործել դրանցից յուրաքանչյուրը:",
             "Բացատրեք Python-ում Decorator-ների աշխատանքի սկզբունքը և բերեք գործնական օրինակ:",
-            "Ինչպե՞ս է աշխատում Garbage Collector-ը Python-ում:"
+            "Ինչպե՞ս է աշխատում Garbage Collector-ը Python-ում (Reference counting և Generational GC):"
         ],
         "FastAPI & REST API Architecture": [
             "Ի՞նչ է Dependency Injection-ը և ի՞նչ խնդիրներ է այն լուծում FastAPI-ում:",
             "Ինչպե՞ս է կազմակերպվում ասինխրոն (async/await) աշխատանքը FastAPI-ում:",
-            "Ինչպե՞ս է աշխատում Pydantic-ը տվյալների վավերացման գործընթացում:"
+            "Ինչպե՞ս է աշխատում Pydantic-ը տվյալների վավերացման (validation) գործընթացում:"
         ],
         "Database, SQL & ORM": [
-            "Բացատրեք N+1 հարցումների խնդիրը և նշեք դրա լուծման տարբերակները ORM-ում:",
+            "Բացատրեք N+1 հարցումների (queries) խնդիրը և նշեք դրա լուծման տարբերակները ORM-ում:",
             "Ո՞րն է տարբերությունը INNER JOIN-ի և LEFT JOIN-ի միջև, բերեք SQL օրինակ:",
-            "Ի՞նչ են ինդեքսները տվյալների բազաներում, ինչպե՞ս են դրանք ազդում կատարողականի վրա:"
+            "Ի՞նչ են ինդեքսները (Indexes) տվյալների բազաներում, ինչպե՞ս են դրանք ազդում կատարողականի վրա:"
         ],
         "System Design & Asyncio": [
             "Ինչպե՞ս է աշխատում Python-ի Asyncio-ի Event Loop-ը և որո՞նք են դրա սահմանափակումները:",
             "Ի՞նչ է Microservices արխիտեկտուրան և որո՞նք են դրա առավելություններն ու թերությունները Monolith-ի համեմատ:",
-            "Ինչպե՞ս կնախագծեիք URL Shortener համակարգ:"
+            "Ինչպե՞ս կնախագծեիք URL Shortener համակարգ (System Design հիմնական մոտեցումները):"
         ]
     }
 
@@ -418,11 +296,11 @@ Return ONLY the text of the question, without any introductory phrases, prefixes
     if available_questions:
         return random.choice(available_questions)
     else:
-        return f"({topic}) Խորացված տեխնիկական վերլուծություն #{len(used_questions) + 1} ({difficulty}):"
+        return f"({topic}) Խորացված տեխնիկական վերլուծություն #{len(used_questions) + 1} ({difficulty}): Որո՞նք են ձեր կիրառած լավագույն պրակտիկաները այս բաժնում:"
 
 
 def is_valid_name(name_str):
-    pattern = r'^[\u0531-\u0587a-zA-Zа-яА-Я\s-]+$'
+    pattern = r'^[a-zA-Zа-яА-Яա-ֆԱ-Ֆ-]+\s*$'
     return bool(re.match(pattern, name_str.strip()))
 
 
@@ -447,7 +325,7 @@ def save_feedback_to_separate_storage(feedback_data):
         return False
 
 
-# --- PDF CERTIFICATE GENERATOR ---
+# --- FLAWLESS PDF CERTIFICATE GENERATOR WITH ARMENIAN FONT SUPPORT ---
 def generate_certificate_pdf(full_name, topic, score):
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=landscape(letter))
@@ -573,12 +451,13 @@ if st.session_state.step == "welcome":
         </p>
     """, unsafe_allow_html=True)
 
+    # Խիստ զգուշացումների վահանակ
     st.markdown("""
     <div class="warning-box">
-        🔒 <b>ՀԱՐԹԱԿԻ ԱՆՎՏԱՆԳՈՒԹՅԱՆ ԵՎ ՀԱԿԱԽԱՐԴԱԽՈՒԹՅԱՆ ԿԱՆՈՆՆԵՐ</b><br>
-        • <b>Copy / Cut արգելք։</b> Արգելված է հարթակից տեքստ արտագրելը կամ կտրելը։<br>
-        • <b>Լիէկրան Blur վահանակ։</b> Եթե հեռանաք էջից կամ փոխեք թաբը, էջն ակնթարթորեն կմշուշվի և կարգելափակվի:<br>
-        • <b>ԱԲ (AI) խիստ դետեկտոր։</b> Համակարգը LIVE հետևում է պատասխանների բնույթին․ արհեստական բանականության օգտագործման կամ արտագրված լինելու դեպքում պատասխանը գնահատվում է 0 միավոր։
+        🛑 ԱՆՎՏԱՆԳՈՒԹՅԱՆ ԵՎ ՔՆՆԱԿԱՆ ԿԱՆՈՆՆԵՐ<br>
+        1. <b>Copy-Paste</b> սահմանափակում. Եթե արտագրված տեքստը գերազանցում է 5%-ը, ստանում եք <b>0 միավոր</b> ("Արտագրված է"):<br>
+        2. <b>ԱԲ (AI) օգտագործում</b>. Համակարգը հայտնաբերելու դեպքում վերադարձնում է "Արտագրված է ԱԲ-ից" (< 0 միավոր):<br>
+        3. <b>Անվտանգության վահան</b>. Արգելված է հեռանալ թաբից կամ փորձել սքրինշոթ անել (ֆոկուսի կորստի դեպքում էջը ակնթարթորեն մշուշվում է / Blur):
     </div>
     """, unsafe_allow_html=True)
 
@@ -586,10 +465,10 @@ if st.session_state.step == "welcome":
     <div class="hero-card">
         <h3 style="color: #1E293B; margin-top: 0; font-weight: 700;">✨ Մեր մասին</h3>
         <p style="color: #334155; font-size: 1.05rem; line-height: 1.7; margin-bottom: 1rem;">
-            <b>«Հենք» հիմնադրամը</b> ավելին է, քան պարզապես կազմակերպություն։ Սա միասնական և ջերմ ընտանիք է, որտեղ յուրաքանչյուր անհատի ձայնը լսելի է, իսկ գաղափարները՝ արժևորված։
+            <b>«Հենք» հիմնադրամը</b> ավելին է, քան պարզապես կազմակերպություն։ Սա միասնական և ջերմ ընտանիք է, որտեղ յուրաքանչյուր անհատի ձայնը լսելի է, իսկ գաղափարները՝ արժևորված։ Մենք հավատում ենք, որ մեր հաջողության գրավականը նպատակասլաց, ստեղծարար և զարգանալ ձգտող մասնագետներն են։
         </p>
         <p style="color: #334155; font-size: 1.05rem; line-height: 1.7; margin: 0;">
-            <b>Ժամանակացույց․</b> Թեստի համար տրվում է ընդհանուր <b>30 րոպե</b> ժամանակ։ Դուք ինքներդ եք տնօրինում, թե որ հարցի վրա որքան ժամանակ կծախսեք։
+            <b>Նոր կարգավորում․</b> Թեստի համար տրվում է <b>կես ժամ (30 րոպե)</b> ընդհանուր ժամանակ։ Դուք ինքներդ եք տնօրինում, թե որ հարցի վրա որքան ժամանակ կծախսեք։
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -650,11 +529,12 @@ if st.session_state.step == "welcome":
             st.session_state.history = []
             st.session_state.used_questions = []
             st.session_state.current_q_text = ""
+            # Սահմանում ենք 30 րոպե ընդհանուր ժամանակ (1800 վայրկյան)
             st.session_state.interview_deadline = time.time() + 1800
             st.rerun()
 
 # ---------------------------------------------------------
-# ԷՋ 2: INTERVIEW PAGE
+# ԷՋ 2: INTERVIEW PAGE (30 MINS GENERAL TIMER)
 # ---------------------------------------------------------
 elif st.session_state.step == "interview":
     time_left = int(st.session_state.interview_deadline - time.time())
@@ -676,11 +556,16 @@ elif st.session_state.step == "interview":
             st.session_state.current_q_text = q_generated
             st.session_state.used_questions.append(q_generated)
 
+    mins, secs = divmod(max(0, time_left), 60)
+    timer_color = "#EF4444" if time_left < 180 else "#10B981"
+
     col_h1, col_h2 = st.columns([3, 1])
     with col_h1:
         st.title(f"❓ Հարց {idx + 1} / {total_q}")
     with col_h2:
-        render_live_timer(time_left)
+        st.markdown(
+            f"<div style='text-align: right; font-size: 1.2rem; font-weight: bold; color: {timer_color}; padding-top: 15px;'>⏳ Մնացած ժամանակ՝ {mins:02d}:{secs:02d}</div>",
+            unsafe_allow_html=True)
 
     st.caption(f"Թեմա՝ **{topic}** | Մակարդակ՝ **{level}** | Ընթացիկ բարդություն՝ **{difficulty}**")
     st.progress((idx + 1) / total_q)
@@ -689,7 +574,7 @@ elif st.session_state.step == "interview":
     st.markdown(f"### 💬 {st.session_state.current_q_text}")
 
     user_ans = st.text_area(
-        "Ձեր պատասխանը․",
+        "Ձեր պատասխանը․ (Հիշե՛ք՝ խստիվ արգելված է Copy-Paste-ը > 5% և ԱԲ օգտագործումը)",
         value="",
         placeholder="Գրեք Ձեր մանրամասն պատասխանն այստեղ...",
         height=160,
@@ -698,16 +583,9 @@ elif st.session_state.step == "interview":
 
     btn_label = "Հաջորդ Հարցը ➡️" if idx + 1 < total_q else "Ավարտել և Դիտել Վերլուծությունը 📊"
     if st.button(btn_label, use_container_width=True):
-        with st.spinner("🤖 Ստուգվում է պատասխանը հակախարդախության և ԱԲ (AI) դետեկտորով..."):
-            score, feedback, is_ai_detected = detect_ai_usage_and_evaluate(st.session_state.current_q_text, user_ans,
-                                                                           difficulty)
-
-        if is_ai_detected:
-            st.markdown("""
-            <div class="cheating-alert">
-                ⚠️ Հայտնաբերվեց արհեստական բանականության (AI) օգտագործում։ Այս պատասխանը հաշվի չի առնվում և գնահատվում է 0 միավոր։
-            </div>
-            """, unsafe_allow_html=True)
+        with st.spinner("🤖 Ստուգվում է պատասխանը (անվտանգության և ԱԲ ստուգում)..."):
+            score, feedback, is_copied, is_ai = evaluate_answer_standard(st.session_state.current_q_text, user_ans,
+                                                                         difficulty)
 
         if score >= 75:
             next_diff = "Hard"
@@ -723,8 +601,9 @@ elif st.session_state.step == "interview":
             "difficulty": difficulty,
             "score": score,
             "feedback": feedback,
-            "is_ai": is_ai_detected,
-            "word_count": len(user_ans.strip().split())
+            "word_count": len(user_ans.strip().split()),
+            "is_copied": is_copied,
+            "is_ai": is_ai
         })
 
         st.session_state.current_q_text = ""
@@ -749,16 +628,15 @@ elif st.session_state.step == "analytics":
         f"Շնորհակալություն, **{user.get('first_name')} {user.get('last_name')}**։ Ձեր հարցազրույցն հաջողությամբ ավարտվեց։")
     st.divider()
 
-    st.subheader("📝 Ձեր Պատասխանները և Անվտանգության/ԱԲ Ստուգման Արդյունքները")
+    st.subheader("📝 Ձեր Պատասխանները և Ստուգման Արդյունքները")
     if not history:
-        st.info("Պատասխաններ չեն գրանցվել։")
+        st.info("Պատասխաններ չեն գրանցվել, քանի որ ժամանակը սպառվել է կամ տվյալներ չեն ուղարկվել։")
     else:
         for item in history:
-            badge = " ❌ [ԱԲ հայտնաբերված է - 0 միավոր]" if item.get('is_ai') else ""
             with st.expander(
-                    f"📌 {item['q_num']}: {item['question']} (Բարդություն՝ {item['difficulty']}) - `{item['score']}/100`{badge}"):
+                    f"📌 {item['q_num']}: {item['question']} (Բարդություն՝ {item['difficulty']}) - `{item['score']}/100`"):
                 st.write(f"**Պատասխան:** {item['answer'] if item['answer'].strip() else '_[Պատասխան չի տրվել]_'}")
-                st.write(f"**Վերլուծություն / AI Կարծիք:** {item['feedback']}")
+                st.write(f"**Վերլուծություն / Կարծիք:** {item['feedback']}")
 
     st.divider()
     st.subheader("📈 Վերլուծական Գրաֆիկներ")
@@ -772,6 +650,7 @@ elif st.session_state.step == "analytics":
         fig, axs = plt.subplots(2, 2, figsize=(12, 8), dpi=100)
         fig.patch.set_facecolor('#F8FAFC')
 
+        # Chart 1
         axs[0, 0].plot(labels, scores, marker='o', markersize=8, color='#2563EB', linewidth=3, label="Միավոր")
         axs[0, 0].axhline(y=75, color='#EF4444', linestyle='--', alpha=0.7, label="Passing (75%)")
         axs[0, 0].set_title("1. Առաջադիմության Դինամիկան", fontsize=11, fontweight='bold')
@@ -779,6 +658,7 @@ elif st.session_state.step == "analytics":
         axs[0, 0].grid(True, linestyle=':', alpha=0.6)
         axs[0, 0].legend(loc="upper left")
 
+        # Chart 2
         diff_colors = {"Easy": "#10B981", "Medium": "#F59E0B", "Hard": "#EF4444"}
         col_list = [diff_colors.get(d, "#3B82F6") for d in difficulties]
         axs[0, 1].bar(labels, scores, color=col_list, width=0.5, edgecolor='#1E293B', linewidth=0.8)
@@ -786,6 +666,7 @@ elif st.session_state.step == "analytics":
         axs[0, 1].set_ylim(-5, 105)
         axs[0, 1].grid(axis='y', linestyle=':', alpha=0.6)
 
+        # Chart 3
         axs[1, 0].scatter(word_counts, scores, color='#8B5CF6', s=120, edgecolors='#4C1D95', zorder=5)
         axs[1, 0].set_title("3. Ծավալի (Բառեր) և Միավորի Կապը", fontsize=11, fontweight='bold')
         axs[1, 0].set_xlabel("Բառերի Քանակ", fontsize=9)
@@ -793,6 +674,7 @@ elif st.session_state.step == "analytics":
         axs[1, 0].set_ylim(-5, 105)
         axs[1, 0].grid(True, linestyle=':', alpha=0.6)
 
+        # Chart 4
         high = sum(1 for s in scores if s >= 75)
         mid = sum(1 for s in scores if 40 <= s < 75)
         low = sum(1 for s in scores if s < 40)
@@ -808,6 +690,8 @@ elif st.session_state.step == "analytics":
 
         plt.tight_layout(pad=2.0)
         st.pyplot(fig)
+    else:
+        st.write("Գրաֆիկներ չկան արդյունքների բացակայության պատճառով։")
 
     st.write("")
     if st.button("Անցնել Դիմում-Բողոք-Առաջարկների Բաժին 📝", use_container_width=True):
@@ -815,14 +699,14 @@ elif st.session_state.step == "analytics":
         st.rerun()
 
 # ---------------------------------------------------------
-# ԷՋ 4: FEEDBACK PAGE
+# ԷՋ 4: ԴԻՄՈՒՄ, ԲՈՂՈՔ, ԱՌԱՋԱՐԿՆԵՐԻ ԲԱԺԻՆ
 # ---------------------------------------------------------
 elif st.session_state.step == "feedback_page":
     user = st.session_state.user_profile
     st.title("📋 Դիմում, Բողոք և Առաջարկներ")
     st.markdown("""
     <p style="color: #475569; font-size: 1.05rem;">
-        Ձեր կարծիքը, առաջարկները կամ բողոքները շատ կարևոր են մեզ համար։ Այս տվյալները պահպանվում են առանձին բազայում։
+        Ձեր կարծիքը, առաջարկները կամ բողոքները շատ կարևոր են մեզ համար։ Այս տվյալներն առանձնացված են և պահպանվելու են առանձին բազայում՝ հետագա բարելավումների համար։
     </p>
     """, unsafe_allow_html=True)
     st.divider()
@@ -834,8 +718,11 @@ elif st.session_state.step == "feedback_page":
         )
         subject = st.text_input("Վերնագիր / Հարցի համառոտ նկարագրություն *",
                                 placeholder="Օրինակ՝ Հարթակի վերաբերյալ առաջարկ...")
-        details = st.text_area("Մանրամասն նկարագրություն կամ առաջարկ *",
-                               placeholder="Գրեք ձեր մանրամասն մեկնաբանությունները այստեղ...", height=150)
+        details = st.text_area(
+            "Մանրամասն նկարագրություն կամ առաջարկ *",
+            placeholder="Գրեք ձեր մանրամասն մեկնաբանությունները այստեղ...",
+            height=150
+        )
         submit_feedback = st.form_submit_button("Ուղարկել և Պահպանել 📥", use_container_width=True)
 
     if submit_feedback:
@@ -865,7 +752,7 @@ elif st.session_state.step == "feedback_page":
         st.rerun()
 
 # ---------------------------------------------------------
-# ԷՋ 5: FINAL RESULT & CERTIFICATE
+# ԷՋ 5: ՎԵՐՋՆԱԿԱՆ ԱՐԴՅՈՒՆՔԻ ԷՋ (ԿԵՆՏՐՈՆԱՑՎԱԾ)
 # ---------------------------------------------------------
 elif st.session_state.step == "final_result":
     user = st.session_state.user_profile
@@ -873,23 +760,11 @@ elif st.session_state.step == "final_result":
 
     scores = [h['score'] for h in history]
     avg_score = sum(scores) / len(scores) if scores else 0
-    ai_violation_count = sum(1 for h in history if h.get('is_ai'))
 
     st.markdown("<h1 style='text-align: center;'> Վերջնական Արդյունք</h1>", unsafe_allow_html=True)
     st.write("")
 
-    if ai_violation_count > 0:
-        st.markdown(f"""
-        <div class="encourage-card">
-            <h1 style="color: #92400E; margin-bottom: 0.5rem; text-align: center;">⚠️ Հարցազրույցն Ավարտված է Խախտումով</h1>
-            <h3 style="color: #B45309; text-align: center;">Հարգելի {user.get('first_name')} {user.get('last_name')}։</h3>
-            <p style="font-size: 1.1rem; color: #78350F; margin-top: 1rem; text-align: center;">
-                Հարցազրույցի ընթացքում հայտնաբերվել է արհեստական բանականության (AI) օգտագործում (<b>{ai_violation_count}</b> դեպք)։<br>
-                Համաձայն կանոնների՝ այդ պատասխանները չեն հաշվվել (ստացել են 0 միավոր)։
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-    elif avg_score >= 75:
+    if avg_score >= 75:
         st.balloons()
         st.markdown(f"""
         <div class="congrats-card">
@@ -921,7 +796,8 @@ elif st.session_state.step == "final_result":
             <h1 style="color: #92400E; margin-bottom: 0.5rem; text-align: center;">💪 Լավ փորձ էր, {user.get('first_name')} {user.get('last_name')}։</h1>
             <h3 style="color: #B45309; text-align: center;">Սա հիանալի քայլ էր Ձեր գիտելիքները ստուգելու համար։</h3>
             <p style="font-size: 1.1rem; color: #78350F; margin-top: 1rem; text-align: center;">
-                Ձեր միջին արդյունքն է՝ <b>{avg_score:.1f}%</b> (Անցողիկ շեմը՝ 75%)։
+                Ձեր միջին արդյունքն է՝ <b>{avg_score:.1f}%</b> (Անցողիկ շեմը՝ 75%)։<br>
+                Խորհուրդ ենք տալիս ևս մեկ անգամ կրկնել թեման և փորձել նորից։
             </p>
         </div>
         """, unsafe_allow_html=True)
