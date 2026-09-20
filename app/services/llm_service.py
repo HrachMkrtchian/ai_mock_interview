@@ -11,7 +11,7 @@ class LLMService:
             raise ValueError("GEMINI_API_KEY environment variable is missing")
 
         self.client = genai.Client(api_key=api_key)
-        self.model_name = "gemini-3.6-flash"
+        self.model_name = "gemini-3.1-flash-lite"
 
     def generate_question(self, role: str, difficulty: str, topic: str, question_id: int, lang: str = "AM") -> NextQuestionResponse:
 
@@ -53,7 +53,7 @@ class LLMService:
         Candidate Role: {role}
         Question difficulty: {difficulty}
         Topic: {topic}
-        Provide a evaluation with score (0 to 10), strengths, missing points, and overall feedback.
+        Provide a evaluation with score (0 to 100), strengths, missing points, and overall feedback.
         """
 
         response = self.client.models.generate_content(
@@ -74,10 +74,10 @@ class LLMService:
         current_idx = levels.index(current_difficulty) if current_difficulty in levels else 0
 
 
-        if score >= 8 and current_idx < len(levels) - 1:
+        if score >= 80 and current_idx < len(levels) - 1:
             return levels[current_idx + 1]
 
-        elif score <= 3 and current_idx > 0:
+        elif score <= 30 and current_idx > 0:
             return levels[current_idx - 1]
 
         return current_difficulty
@@ -96,12 +96,12 @@ class LLMService:
 
         for item in history_evaluations:
             diff = item.get("difficulty", "Junior")
-            score = item.get("score", 0.0)  # 0 to 10
+            score = item.get("score", 0.0)
 
-            question_max_points = DIFFICULTY_MAX_POINTS.get(diff, 10)
+            question_max_points = DIFFICULTY_MAX_POINTS.get(diff, 100)
 
 
-            user_total_points += (score / 10.0) * question_max_points
+            user_total_points += (score / 100.0) * question_max_points
 
             max_possible_points += question_max_points
 
