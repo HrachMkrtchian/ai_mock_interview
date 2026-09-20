@@ -19,7 +19,7 @@ class SubmitAnswerRequest(BaseModel):
 
 
 class QuestionEvaluation(BaseModel):
-    score: int = Field(..., description="Score from 0 to 10")
+    score: int = Field(..., description="Score from 0 to 100")
     strengths: List[str] = Field(default_factory=list, description="Strengths of the answer")
     missing_points: List[str] = Field(default_factory=list, description="Missing points")
     feedback: str = Field(..., description="Overall feedback")

@@ -57,10 +57,10 @@ def submit_answer(
         "score": evaluation.score
     })
 
-    # Եթե պատասխանել է 4-րդ (վերջին) հարցին, հաշվում ենք վերջնական կշռված %-ը
+
     if len(sessions_db[request.session_id]) >= 4:
         final_summary = llm_service.calculate_final_result(sessions_db[request.session_id])
-        # Վերջնական արդյունքը պահում ենք սեսիայի մեջ` հետագայում analytics-ին փոխանցելու համար
+
         sessions_db[f"{request.session_id}_result"] = final_summary
 
     return evaluation
